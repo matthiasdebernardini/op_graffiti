@@ -13,6 +13,7 @@
 		pkgs.cargo-nextest
 		pkgs.cargo-watch
 		pkgs.cargo-wizard
+		pkgs.cargo-readme
 		pkgs.hurl
 		]
 		++

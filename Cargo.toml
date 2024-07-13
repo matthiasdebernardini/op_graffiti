@@ -3,8 +3,15 @@ name = "op_grafitti"
 version = "0.1.0"
 edition = "2021"
 description = "A webapi that lets you write data to the bitcoin blockchain using op_return"
+repository = "https://github.com/matthiasdebernardini/op_graffiti"
+categories = ["web-programming"]
+keywords = ["bitcoin", "bdk"]
+license = "MIT"
+
+
 
 [dependencies]
+doc-comment = "0.3.3"
 
 [profile.dev]
 debug = 0
