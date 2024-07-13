@@ -1,0 +1,10 @@
+[package]
+name = "op_grafitti"
+version = "0.1.0"
+edition = "2021"
+description = "A webapi that lets you write data to the bitcoin blockchain using op_return"
+
+[dependencies]
+
+[profile.dev]
+debug = 0
