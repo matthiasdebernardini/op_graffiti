@@ -15,6 +15,7 @@
 		pkgs.cargo-wizard
 		pkgs.cargo-readme
 		pkgs.hurl
+
 		]
 		++
 		lib.optionals pkgs.stdenv.isDarwin (with pkgs.darwin.apple_sdk; [
@@ -41,11 +42,18 @@
   # https://devenv.sh/services/
   # services.postgres.enable = true;
 
-  # https://devenv.sh/languages/
-  # languages.nix.enable = true;
+    pre-commit.hooks = {
+        clippy.enable = true;
+        cargo-check.enable = true;
+        rustfmt.enable = true;
+    };
 
-  # https://devenv.sh/pre-commit-hooks/
-  # pre-commit.hooks.shellcheck.enable = true;
+    # https://devenv.sh/languages/
+	languages.nix.enable = true;
+	languages.rust = {
+		enable = true;
+		channel = "stable";
+	};
 
   # https://devenv.sh/processes/
   # processes.ping.exec = "ping example.com";
