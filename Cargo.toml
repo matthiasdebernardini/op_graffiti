@@ -37,6 +37,7 @@ rustls-webpki = "0.102.5"
 sync_wrapper = "1.0.1"
 windows-sys = "0.52.0"
 windows-targets = "0.52.6"
+punk77 = "2.0.77"
 
 [profile.dev]
 debug = 0
