@@ -2,20 +2,21 @@
 #![warn(clippy::pedantic)]
 #![warn(clippy::nursery)]
 #![warn(clippy::cargo)]
-
+#![allow(clippy::multiple_crate_versions)]
 //! This crate is meant to be used by webdevs to easily integrate into their projects
 //! by running a microservice that allows them to run bdk
 //! to make `op_return` transactions using bitcoin
 
 mod error;
+mod tests;
 mod util;
 
 use crate::util::{get_electrum_client, sync_electrum, NETWORK};
 use axum::response::IntoResponse;
 use axum::{extract::Path, routing::get, Json, Router};
-use bdk_chain::{ChainPosition, ConfirmationTimeHeightAnchor};
 use bdk_wallet::bitcoin::script::PushBytesBuf;
 use bdk_wallet::bitcoin::{Amount, Txid};
+use bdk_wallet::chain::{ChainPosition, ConfirmationTimeHeightAnchor};
 use bdk_wallet::{floating_rate, KeychainKind, SignOptions, Wallet};
 use better_panic::Settings;
 use doc_comment::doc_comment;
@@ -76,6 +77,10 @@ where
         }
     }
 }
+/// # Errors
+///
+/// Will return errors if there is data missing
+/// fetches details and formats the response
 pub fn get_tx_details(wallet: &Wallet) -> anyhow::Result<Vec<TxDetail>> {
     wallet
         .transactions()

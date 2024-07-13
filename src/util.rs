@@ -5,6 +5,7 @@ use bdk_wallet::bitcoin::Network::{Bitcoin, Regtest, Signet, Testnet};
 use bdk_wallet::{KeychainKind, Wallet};
 use std::collections::HashSet;
 use std::io::Write;
+use tracing::info;
 
 pub const NETWORK: Network = {
     if cfg!(feature = "bitcoin") {
@@ -17,8 +18,8 @@ pub const NETWORK: Network = {
         Signet
     }
 };
-pub(crate) const STOP_GAP: usize = 50;
-pub(crate) const BATCH_SIZE: usize = 5;
+const STOP_GAP: usize = 50;
+const BATCH_SIZE: usize = 5;
 
 pub fn sync_electrum(wallet: &mut Wallet) {
     let client = get_electrum_client();
@@ -33,9 +34,9 @@ pub fn sync_electrum(wallet: &mut Wallet) {
             let mut once = HashSet::<KeychainKind>::new();
             move |k, spk_i, _| {
                 if once.insert(k) {
-                    print!("\nScanning keychain [{:?}]", k)
+                    info!("\nScanning keychain [{k:?}]");
                 } else {
-                    print!(" {:<3}", spk_i)
+                    info!(" {spk_i:<3}");
                 }
             }
         })

@@ -1,3 +1,4 @@
+use crate::error;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
@@ -33,7 +34,7 @@ impl IntoResponse for Report {
 
         tracing::error!("{err_string}");
 
-        if let Some(err) = err.downcast_ref::<GraffitiError>() {
+        if let Some(err) = err.downcast_ref::<error::Graffiti>() {
             return err.response();
         }
 
@@ -47,16 +48,16 @@ impl IntoResponse for Report {
 }
 
 #[derive(thiserror::Error, Debug)]
-pub(crate) enum GraffitiError {
+pub enum Graffiti {
     #[error("An error occurred: {0}")]
     Anyhow(#[from] anyhow::Error),
 }
-impl GraffitiError {
+impl Graffiti {
     fn response(&self) -> Response {
         let (status, err_msg) = match self {
             Self::Anyhow(e) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                format!("error getting wallet name {}", e),
+                format!("error getting wallet name {e}"),
             ),
         };
         (status, Json(json!({ "error": err_msg }))).into_response()
