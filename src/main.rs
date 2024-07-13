@@ -15,7 +15,6 @@ use std::io::IsTerminal;
 use crate::error::GraffitiError;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-/// entry point for the webserver
 use axum::{extract::Path, routing::get, Json, Router};
 use better_panic::Settings;
 use serde_json::json;
