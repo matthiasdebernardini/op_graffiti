@@ -1,4 +1,5 @@
 // External crate imports
+use axum::extract::State;
 use axum::{extract::Path, response::IntoResponse, Json};
 use bdk_electrum::bdk_chain::bitcoin::script::PushBytesBuf;
 use bdk_wallet::{KeychainKind, SignOptions, Wallet};
@@ -7,18 +8,19 @@ use tracing::info;
 
 // Local crate imports
 use crate::error::{Graffiti, Report};
+use crate::util::GrafittiState;
 use crate::{
     error,
     util::{get_electrum_client, get_tx_details, sync_electrum, NETWORK},
     EXTERNAL_DESCRIPTOR, INTERNAL_DESCRIPTOR,
 };
 
-#[tracing::instrument]
-pub async fn get_op_return() -> error::Result<impl IntoResponse> {
+pub async fn get_op_return(State(gs): State<GrafittiState>) -> error::Result<impl IntoResponse> {
     info!("Received READ request for op return transactions");
     let mut wallet = Wallet::new(EXTERNAL_DESCRIPTOR, INTERNAL_DESCRIPTOR, NETWORK)?;
+    let client = gs.blockchain.lock().await;
 
-    sync_electrum(&mut wallet)
+    sync_electrum(client, &mut wallet)
         .await
         .map_err(|e| Report::from(Graffiti::Anyhow(e)))?;
 
@@ -29,12 +31,16 @@ pub async fn get_op_return() -> error::Result<impl IntoResponse> {
     Ok(Json(j))
 }
 
-#[tracing::instrument]
-pub async fn write_op_return(Path(data): Path<String>) -> error::Result<impl IntoResponse> {
+pub async fn write_op_return(
+    State(gs): State<GrafittiState>,
+    Path(data): Path<String>,
+) -> error::Result<impl IntoResponse> {
     info!("Received WRITE request with data: {}", &data);
+    let client = gs.blockchain.lock().await;
+    // let db = ss.bdk_pool.lock().await.clone();
 
     let mut wallet = Wallet::new(EXTERNAL_DESCRIPTOR, INTERNAL_DESCRIPTOR, NETWORK)?;
-    sync_electrum(&mut wallet)
+    sync_electrum(client, &mut wallet)
         .await
         .map_err(|e| Report::from(Graffiti::Anyhow(e)))?;
 

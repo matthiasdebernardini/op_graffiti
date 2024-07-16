@@ -1,3 +1,8 @@
+use std::fmt;
+use std::fmt::Debug;
+use std::ops::Not;
+use std::sync::Arc;
+use tokio::sync::MutexGuard;
 // Third-party crates
 use axum::routing::get;
 use axum::Router;
@@ -10,14 +15,16 @@ use tracing::info;
 
 // BDK (Bitcoin Development Kit) related imports
 use bdk_electrum::bdk_chain::{ChainPosition, ConfirmationTimeHeightAnchor};
-use bdk_electrum::electrum_client::Client;
+use bdk_electrum::electrum_client::Client as ElectrumClient;
 use bdk_electrum::BdkElectrumClient;
 use bdk_wallet::bitcoin::script::Instruction;
 use bdk_wallet::bitcoin::Network::{Bitcoin, Regtest, Signet, Testnet};
 use bdk_wallet::bitcoin::{Amount, Network, Txid};
 use bdk_wallet::{floating_rate, Wallet};
+use tokio::sync::Mutex;
 // Local imports
 use crate::routes::{get_op_return, write_op_return};
+use crate::testenv::TestEnv;
 
 pub const NETWORK: Network = {
     if cfg!(feature = "bitcoin") {
@@ -33,10 +40,12 @@ pub const NETWORK: Network = {
 const STOP_GAP: usize = 50;
 const BATCH_SIZE: usize = 5;
 
-#[tracing::instrument]
-pub async fn sync_electrum(wallet: &mut Wallet) -> anyhow::Result<()> {
+pub async fn sync_electrum(
+    client: MutexGuard<'_, BdkElectrumClient<ElectrumClient>>,
+    wallet: &mut Wallet,
+) -> anyhow::Result<()> {
     info!("syncing electrum");
-    let client = get_electrum_client()?;
+    // let client = get_electrum_client()?;
 
     // Populate the electrum client's transaction cache so it doesn't redownload transaction we
     // already have.
@@ -47,9 +56,7 @@ pub async fn sync_electrum(wallet: &mut Wallet) -> anyhow::Result<()> {
     // todo might be slow
     let mut update = client
         .full_scan(request, STOP_GAP, BATCH_SIZE, false)?
-        // .unwrap()
         .with_confirmation_time_height_anchor(&client)?;
-    // .unwrap();
 
     let now = std::time::UNIX_EPOCH.elapsed().unwrap().as_secs();
     let _ = update.graph_update.update_last_seen_unconfirmed(now);
@@ -58,14 +65,20 @@ pub async fn sync_electrum(wallet: &mut Wallet) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub fn get_electrum_client() -> anyhow::Result<BdkElectrumClient<Client>> {
-    let electrum_url = match NETWORK {
-        Bitcoin => "ssl://electrum.blockstream.info:50002",
-        // "ssl://mempool.space:50002",
-        _ => "ssl://mempool.space:60602",
+pub fn get_electrum_client() -> anyhow::Result<BdkElectrumClient<ElectrumClient>> {
+    let electrum_url = if cfg!(debug_assertions) {
+        println!("getting testenv");
+        let env = TestEnv::new().unwrap();
+        env.electrsd.electrum_url.clone()
+    } else {
+        match NETWORK {
+            Bitcoin => "ssl://electrum.blockstream.info:50002".to_string(),
+            // "ssl://mempool.space:50002",
+            _ => "ssl://mempool.space:60602".to_string(),
+        }
     };
 
-    let client = Client::new(electrum_url)?;
+    let client = ElectrumClient::new(electrum_url.as_str())?;
     let client = BdkElectrumClient::new(client);
     Ok(client)
 }
@@ -206,7 +219,7 @@ pub fn setup_better_panic() {
 }
 
 pub async fn setup_server() -> anyhow::Result<(Router, TcpListener)> {
-    let app = setup_router();
+    let app = setup_router()?;
 
     let listener = setup_listener().await?;
     Ok((app, listener))
@@ -223,11 +236,31 @@ async fn setup_listener() -> anyhow::Result<TcpListener> {
     let listener = tokio::net::TcpListener::bind(addr).await?;
     Ok(listener)
 }
+#[derive(Clone)]
+pub struct GrafittiState {
+    pub(crate) blockchain: Arc<Mutex<BdkElectrumClient<ElectrumClient>>>,
+}
 
-fn setup_router() -> Router {
-    Router::new()
+impl Debug for GrafittiState {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("State")
+            .field("blockchain", &"Arc<Mutex<BdkElectrumClient<Client>>>")
+            .finish()
+    }
+}
+fn setup_router() -> anyhow::Result<Router> {
+    let client = get_electrum_client()?;
+
+    let grafitti_state = GrafittiState {
+        blockchain: Arc::new(Mutex::new(client)),
+    };
+
+    let router = Router::new()
         .route("/get_op_return", get(get_op_return))
         .route("/write_op_return/:data", get(write_op_return))
+        .with_state(grafitti_state);
+
+    Ok(router)
 }
 
 pub fn setup_tracer() {

@@ -12,8 +12,22 @@ services:
     build:
       context: .
       target: final
+    volumes:
+      - ${HOME}/bitcoin_data:/home/appuser/.bitcoin
+      - ${HOME}/electrs_db:/home/appuser/db
+    environment:
+      - ELECTRS_DB_DIR=/home/appuser/db
+      - BITCOIND_EXE=/usr/local/bin/bitcoind
+      - ELECTRS_EXE=/usr/local/bin/electrs
     ports:
-      - 9000:9000
+      - 8332:8332  # Bitcoin Core RPC
+      - 8333:8333  # Bitcoin Core P2P
+      - 18443:18443  # Bitcoin Core Regtest RPC
+      - 18444:18444  # Bitcoin Core Regtest P2P
+      - 50001:50001  # Electrs RPC
+      - 60401:60401  # Electrs monitoring (if enabled)
+      - 9000:9000  # Your application port
+    command: ["/bin/server"]
 
 # The commented out section below is an example of how to define a PostgreSQL
 # database that your application can use. `depends_on` tells Docker Compose to

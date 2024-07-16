@@ -11,6 +11,7 @@
 
 mod error;
 mod routes;
+mod testenv;
 mod tests;
 mod util;
 

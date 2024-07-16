@@ -1,62 +1,55 @@
 { pkgs, lib, config, inputs, ... }:
 
+let
+  customBitcoind = pkgs.callPackage ./bitcoind.nix {};
+in
 {
-  # https://devenv.sh/basics/
-  env.GREET = "devenv";
+  env.DATABASE_URL="postgresql://sirendb_owner:2vDJjo9pGKiP@ep-sweet-shape-a5ouj5s7.us-east-2.aws.neon.tech/sirendb?sslmode=require";
 
-  # https://devenv.sh/packages/
-	packages = [
-	    pkgs.git
-		pkgs.jq
-		pkgs.just
-		pkgs.openssl
-		pkgs.cargo-nextest
-		pkgs.cargo-watch
-		pkgs.cargo-wizard
-		pkgs.cargo-readme
-		pkgs.hurl
+ packages = [
+    pkgs.git
+    pkgs.just
+    pkgs.openssl
+    pkgs.cargo-nextest
+    pkgs.hurl
+    pkgs.sqlx-cli
+    pkgs.tailwindcss
+    pkgs.cargo-watch
+    pkgs.electrs
+    customBitcoind
+  ] ++ lib.optionals pkgs.stdenv.isDarwin (with pkgs.darwin.apple_sdk; [
+    frameworks.CoreFoundation
+    frameworks.Security
+    frameworks.SystemConfiguration
+  ]);
 
-		]
-		++
-		lib.optionals pkgs.stdenv.isDarwin (with pkgs.darwin.apple_sdk; [
-				frameworks.CoreFoundation
-				frameworks.Security
-				frameworks.SystemConfiguration
-		]);
-
-	enterShell = ''
-		cargo --version
-		alias c="cargo"
-		alias cc="cargo check"
-		alias crk="cargo run --bin keel"
-		alias cck="cargo check --bin keel"
-		alias crs="cargo run --bin siren"
-		'';
-
-  # https://devenv.sh/tests/
-  enterTest = ''
-    echo "Running tests"
-    git --version | grep "2.42.0"
+  enterShell = ''
+    git --version
+    cargo --version
+    alias c="cargo"
+    bitcoind --version  # Check Bitcoin Core version
+    export BITCOIND_EXE=$(which bitcoind)
+    echo $BITCOIND_EXE
+    export ELECTRS_EXEC=$(which electrs)
+    echo $ELECTRS_EXEC
   '';
 
-  # https://devenv.sh/services/
-  # services.postgres.enable = true;
+  # https://devenv.sh/pre-commit-hooks/
+  pre-commit.hooks = {
+    clippy.enable = true;
+    cargo-check.enable = true;
+    rustfmt.enable = true;
+  };
 
-    pre-commit.hooks = {
-        clippy.enable = true;
-        cargo-check.enable = true;
-        rustfmt.enable = true;
-    };
+  # https://devenv.sh/languages/
+  languages.nix.enable = true;
+  languages.rust = {
+    enable = true;
+    channel = "stable";
+  };
 
-    # https://devenv.sh/languages/
-	languages.nix.enable = true;
-	languages.rust = {
-		enable = true;
-		channel = "stable";
-	};
-
-  # https://devenv.sh/processes/
-  # processes.ping.exec = "ping example.com";
-
-  # See full reference at https://devenv.sh/reference/options/
+  services.postgres = {
+    enable = true;
+    # initialDatabases = [{ name = "keel"; }];
+  };
 }
