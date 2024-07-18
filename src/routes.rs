@@ -1,8 +1,8 @@
 // External crate imports
 use axum::extract::State;
 use axum::{extract::Path, response::IntoResponse, Json};
-use bdk_electrum::bdk_chain::bitcoin::script::PushBytesBuf;
 use bdk_wallet::{KeychainKind, SignOptions, Wallet};
+// use bdk_wallet::bitcoin::script::PushBytesBuf;
 use serde_json::json;
 use tracing::info;
 
@@ -53,7 +53,7 @@ pub async fn write_op_return(
 
     let mut tx_builder = wallet.build_tx();
 
-    let push_bytes = PushBytesBuf::try_from(data.into_bytes())?;
+    let push_bytes = bdk_wallet::bitcoin::script::PushBytesBuf::try_from(data.into_bytes())?;
     tx_builder.add_data(&push_bytes);
 
     let mut psbt = tx_builder.finish()?;

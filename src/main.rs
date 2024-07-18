@@ -14,7 +14,6 @@ mod routes;
 mod testenv;
 mod tests;
 mod util;
-
 use crate::util::{setup_better_panic, setup_server, setup_tracer};
 use axum::serve;
 use tracing::info;

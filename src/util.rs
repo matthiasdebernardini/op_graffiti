@@ -66,7 +66,7 @@ pub async fn sync_electrum(
 }
 
 pub fn get_electrum_client() -> anyhow::Result<BdkElectrumClient<ElectrumClient>> {
-    let electrum_url = if cfg!(debug_assertions) {
+    let electrum_url = if !cfg!(debug_assertions) {
         println!("getting testenv");
         let env = TestEnv::new().unwrap();
         env.electrsd.electrum_url.clone()

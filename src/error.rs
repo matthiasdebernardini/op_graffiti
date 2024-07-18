@@ -52,6 +52,7 @@ pub enum Graffiti {
     #[error("An error occurred: {0}")]
     Anyhow(#[from] anyhow::Error),
 }
+
 impl Graffiti {
     fn response(&self) -> Response {
         let (status, err_msg) = match self {
