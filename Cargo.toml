@@ -36,7 +36,7 @@ regex-syntax = "0.8.4"
 rustls = "0.23.11"
 rustls-webpki = "0.102.5"
 sync_wrapper = "1.0.1"
-windows-sys = "0.52.0"
+windows-sys = "0.59.0"
 windows-targets = "0.52.6"
 bitcoincore-rpc = "0.19.0"
 electrsd = { version = "0.28.0", features = ["esplora_a33e97e1"] }
